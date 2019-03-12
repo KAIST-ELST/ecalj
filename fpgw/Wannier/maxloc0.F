@@ -597,7 +597,8 @@ c-----------------------------------------------------------------------
       do i = 1,ndat-1
          d1 = dsqrt(sum(vec(:,i)**2))
          d2 = dsqrt(sum(vec(:,i+1)**2))
-         if (d1 .gt. d2) stop 'sortvec: sorting error!'
+c         if (d1 .gt. d2) stop 'sortvec: sorting error!'
+         if (d1 .gt. d2) print *, 'sortvec: sorting error!'
       enddo   
 
       return
@@ -634,9 +635,11 @@ c-----------------------------------------------------------------------
       do i = 1,ndat-1
          d1 = dsqrt(sum(vec(:,i)**2))
          d2 = dsqrt(sum(vec(:,i+1)**2))
-         if (d1 .gt. d2) stop 'sortvec: sorting error!'
+c         if (d1 .gt. d2) stop 'sortvec: sorting error!'
+         if (d1 .gt. d2) print *, 'sortvec: sorting error!'
          if (abs(d1-dist(i)).gt.1.d-4)
-     &   stop 'sortvec: sorting error in d!'
+     &   print *, 'sortvec: sorting error in d!2'
+c     &   stop 'sortvec: sorting error in d!'
       enddo   
 
       return

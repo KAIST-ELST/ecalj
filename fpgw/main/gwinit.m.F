@@ -679,6 +679,10 @@ c      else
       write(ifi,"(a)")'!vis_wan_lbound -1.2  -1.2 -1.2 !real x 3, lower bound in alat unit or abc unit'
       write(ifi,"(a)")'!vis_wan_ubound 1.2  1.2 1.2    !real x 3, upper bound in alat or abc unit'
       write(ifi,"(a)")'!vis_wan_outputformat xsf       ! opendx, cube, xsf , default=xsf'
+
+      write(ifi,"(a)")
+      write(ifi,"(a)")'!crpa_type 1      ! =1 : Blugel method, =2 : Miyake-like method'
+      write(ifi,"(a)")'!nwf_crpa 5      ! number of orbitals which eliminate the screening (c.f. d-dp model.)'
       write(ifi,"(a)" ) '! ################################################# '
       call rx0( ' OK! We have generated GWinput.tmp! ')
       end
