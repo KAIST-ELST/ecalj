@@ -10,6 +10,7 @@
       subroutine readHamiltonianMTO()
       implicit none
       integer:: ififft,ifile_handle,ikpd,ikp,ib1,ib2,ifih,it,iq,nev,nmx,ifig=-999,i,j,ndimhx2
+      integer:: nkpmin_for_print
       complex(8):: img=(0d0,1d0),aaaa,phase
       character*4:: cccx
       real(8)::qp(3),pi=4d0*atan(1d0)
@@ -37,6 +38,8 @@
 !! delta fun check for FFT: k --> T --> k 
 !!    \delta_{kk'} = \sum_{T \in T(i,j)} W_T exp( i (k-k') T)
       ikpd=7
+      nkpmin_for_print = min(nkp,10)
+
       write(6,*)'test for ikpd=',ikpd
       do ikp=1,nkp
         qp = qplist(:,ikp) - qplist(:,ikpd)
@@ -48,7 +51,9 @@
             enddo
             cccx=''
             if(ikp==ikpd) cccx=' <--'
-            write(6,"('\delta-fun test',i4,3f10.4,2i3,2f23.15,a)") ikp, qplist(:,ikp),ib1,ib2,aaaa,cccx
+            if(ikp <= nkpmin_for_print) then
+              write(6,"('\delta-fun test',i4,3f10.4,2i3,2f23.15,a)") ikp, qplist(:,ikp),ib1,ib2,aaaa,cccx
+            endif
           enddo
         enddo
       enddo
@@ -70,6 +75,9 @@
 !    jsp=isp in the collinear case; jsp=1 in the noncollinear
         if(jsp==1) iq=iq+1
         write(6,"('=== iq spin q=',2i4,3f9.5)") iq,jsp,qp
+        if(iq <= nkpmin_for_print) then
+          print *,'ndimhx2　ldim lso=',ndimhx2,ldim,lso
+        endif
         if(ndimhx2/=ldim.and.(lso==0.or.lso==2)) call rx('lmfham:   ndimhx/=ldim')
         if(ndimhx2/=2*ldim.and.lso==1)           call rx('lmfham: 2*ndimhx/=ldim') ! L.S mode or not
         allocate(ovlm(1:ndimhx,1:ndimhx),hamm(1:ndimhx,1:ndimhx))
@@ -97,9 +105,11 @@
           call zhev_tk3( ndimhx , hamm , ovlm , nmx , nev,
      .     evl, t_zv, lprint,savez,getz,ifig,epsovl) 
         endif
-        do i=1,nev
-          write(6,"('eigen111 ',3i4,f15.5)") iq,jsp,i,evl(i)
-        enddo
+        if(iq <= nkpmin_for_print) then
+          do i=1,nev
+            write(6,"('eigen111 ',3i4,f15.5)") iq,jsp,i,evl(i)
+          enddo
+        endif
         deallocate(ovlm,hamm,t_zv,evl)
       enddo
  2019 continue
@@ -114,15 +124,18 @@
 !! Read Hamiltonian files for MTO only case.
       use m_readHamiltonianMTO, only: 
      &  plat, npair,nlat,nqwgt, ldim,ndimhx, hammr,ovlmr, nkp,qplist, epsovl, ib_table,nspx,
+     &  l_table, k_table, qlat, alat, pos,
      &  ReadHamiltonianMTO
       implicit none
       integer:: i,j,ikp,ib1,ib2,it,nmx,nev,jsp
+      integer:: nkpmin_for_print
       complex(8)::img=(0d0,1d0),phase
       complex(8),allocatable:: hamm(:,:),ovlm(:,:),t_zv(:,:)
       real(8),allocatable:: evl(:)
       real(8)::qp(3),pi=4d0*atan(1d0)
       logical:: lprint=.true.,savez=.false.,getz=.false. !dummy
       integer:: ifig=-999!dummy
+      integer:: ifh, ifile_handle
 !! Show git id
       call show_programinfo(6)
 
@@ -133,6 +146,8 @@
       allocate(ovlm(1:ndimhx,1:ndimhx),hamm(1:ndimhx,1:ndimhx))
       allocate(t_zv(ndimhx,ndimhx),evl(ndimhx))
       nmx = ndimhx
+      nkpmin_for_print = min(nkp,10)
+      print *, "nkpmin_for_print", nkpmin_for_print
       do ikp=1,nkp
         qp = qplist(:,ikp) 
       do jsp=1,nspx !nsp is the number of spin.  When lso=1(Lz.Sz), nspx=1
@@ -159,11 +174,76 @@
      .     evl, t_zv, lprint,savez,getz,ifig,epsovl) !stock eigenfunctions z
         endif
 
-        do i=1,nev
-          write(6,"('eigen222 ',3i4,f15.5)") ikp,jsp,i,evl(i)
-        enddo
+        if(ikp <= nkpmin_for_print) then
+          do i=1,nev
+            write(6,"('eigen222 ',3i4,f15.5)") ikp,jsp,i,evl(i)
+           enddo
+         endif
 
       enddo    
       enddo    
       deallocate(ovlm,hamm)
+
+
+      print *, nspx
+
+      !write(ifh,"(1X)")  "========================"
+      !write(ifh,"(3f6.6)") plat(:,1)
+      !write(ifh,"(3f6.6)") plat(:,2)
+      !write(ifh,"(3f6.6)") plat(:,3)
+
+      !write(ifh,"(1X)")  "========================"
+      !write(ifh,"")  ib_table
+
+      !write(ifh,"(1X)")  "========================"
+      !write(ifh,"")  npair
+
+
+
+      print *, "======================== alat"
+      print *, alat
+      print *, "======================== plat"
+      print *, plat
+      print *, "======================== ib_table"
+      print *, ib_table
+      print *, "======================== l_table"
+      print *, l_table
+      print *, "======================== k_table"
+      print *, k_table
+      print *, "======================== npair"
+      print *, npair
+      print *, "======================== qlat"
+      print *, qlat
+      print *, "======================== pos"
+      print *, pos
+      print *, "========================"
+
+      do jsp=1,nspx !nsp is the number of spin.  When lso=1(Lz.Sz), nspx=1
+       ifh = ifile_handle() !return unused file handle
+
+       if (jsp==1) then
+        open(ifh,file='temp_Ham.out.UP')
+       else if (jsp==2) then
+        open(ifh,file='temp_Ham.out.DN')
+       endif
+
+       do i=1,ndimhx
+        do j=1,ndimhx
+         ib1 = mod(ib_table(i),ldim)
+         ib2 = mod(ib_table(j),ldim)
+         do it =1,npair(ib1,ib2)
+           if (abs(hammr(i,j,it,jsp)) < 10E-14 .and. abs(ovlmr(i,j,it,jsp)) < 10E-14 ) then
+           else
+             write(ifh,"(1x, 5i6, 2x, i6, 4e19.8)")
+     &       i, j, nlat(:,it,ib1,ib2), nqwgt(it,ib1,ib2), hammr(i,j,it,jsp), ovlmr(i,j,it,jsp)
+           endif
+         enddo
+        enddo
+       enddo
+
+       close(ifh)
+      enddo
+
+
+
       end program lmfham
