@@ -1478,6 +1478,7 @@ c$$$               call fclose(ifis2)
 c$$$            endif
 
 !! mesh generator.  Unused yet...->in future, we will use this.
+
             allocate(npair(nbas,nbas),pos(3,nbas))
             call dcopy ( nbas * 3 , slat%rv_a_opos , 1 , pos , 1 )
             npairmx=nk1*nk2*nk3*2

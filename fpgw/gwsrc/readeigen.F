@@ -1619,6 +1619,7 @@ c-------------------------------------------------------------
       subroutine init_readeigen_mlw_noeval(nwf_o,nband_o,mrecb_o,mrecg_o)
 c      use m_hamindex
       use m_hamindex,only: readhamindex,imx,ngpmx,nqi,nqnum  ,qtt ,qtti, nqtt
+      use m_keyvalue,only: getkeyvalue
 
 c replace cphi and geig
 c for hwmat
@@ -1626,8 +1627,8 @@ c this should be called after init_readgeigen2
       implicit none
       integer(4):: iq,is,ifiqg,ikp,
      & iopen,iclose,isx,mrecb_o,ikpisp,mrecg_o,
-     & nwf_o,nband_o,ifmlw,ifmlwe,nqbz,nqbze,nqbze2,iqbz,iqbz2,nwf2,
-     & ib,iwf,iwf2,iko_ix,iko_fx,in,ifcphi_o,ifgeig_o,
+     & nwf_o,nband_o,ifmlw,ifmlwe,nqbz,nqbze,nqbze2,iqbz,iqbz2,nwf2,nwf_crpa,
+     & ib,iwf,iwf2,iko_ix,iko_fx,in,ifcphi_o,ifgeig_o,crpa_type,
      & ifuu,nqbz2,nq0i,iko_ix2,iko_fx2,iq0i,iq0i2,j1,j2
       real(8):: q(3),rnorm,cnorm,qu(3),tolq=1d-8
       real(8),allocatable :: eval(:,:,:)
@@ -1708,8 +1709,15 @@ c replace evud
       allocate(evud(nwf,nqi,nsp)) !nqtt
       evud = 0d0
 
+
 c replace geig and cphi
-      allocate(cbwf(iko_ix:iko_fx,nwf,nqtt,nsp)) 
+      
+      call getkeyvalue("GWinput","nwf_crpa",nwf_crpa,default=nwf)
+      call getkeyvalue("GWinput","crpa_type",crpa_type,default=1)
+      write(*,*) 'nwf = ', nwf
+      write(*,*) 'nwf_crpa = ', nwf_crpa
+
+      allocate(cbwf(iko_ix:iko_fx,nwf_crpa,nqtt,nsp)) 
       cbwf = 0d0
 !!
       if(Wpkm4crpa) then
@@ -1718,7 +1726,7 @@ c replace geig and cphi
          open(ifi,file=fname,form='formatted',status='unknown')
          write(ifi,"('== p_km^alpha in PRB83,121101 ! weight in l-subspace ==')")
          write(ifi,"('( = c^sigma_km in book of 45th IFFK by Ersoy)')")
-         write(ifi,"(8i8)") nqtt,nwf,nsp,iko_ix,iko_fx
+         write(ifi,"(8i8)") nqtt,nwf_crpa,nsp,iko_ix,iko_fx
          write(ifi,"('       |pkm|**2          ib      iq     is       q(1:3)')")
       endif
 
@@ -1730,7 +1738,7 @@ c replace geig and cphi
 c
           if (iq0i.eq.0) then
             do ib = iko_ix,iko_fx
-              do iwf= 1,nwf
+              do iwf= 1,nwf_crpa
                 cbwf(ib,iwf,ikp,is) = dnk(ib,iwf,iqbz,is)
               enddo
             enddo
@@ -1743,7 +1751,7 @@ c ~ S[l] <psi(k+q0,n) |e^(iq0.r)| psi(k,l)> <psi(k,l) |psi(k,m)^B>
 c
 c psi^B : bloch fn. corresponding to maxloc Wannier fn.
             do ib = iko_ix,iko_fx
-              do iwf= 1,nwf
+              do iwf= 1,nwf_crpa
                 cbwf(ib,iwf,ikp,is) = 
      >            sum( conjg(uum(iko_ix:iko_fx,ib,iqbz,iq0i,is))
      >                      *dnk(iko_ix:iko_fx,iwf,iqbz,is) )
@@ -1753,8 +1761,17 @@ c psi^B : bloch fn. corresponding to maxloc Wannier fn.
 !! --- write pkm4crpa
           if(Wpkm4crpa) then
              do ib = iko_ix,iko_fx
-                write(ifi,"(f19.15, 3i8, 3f13.6 )")
-     &            sum(abs(cbwf(ib,1:nwf,ikp,is))**2),ib, ikp, is, qtt(1:3,ikp)
+                if(crpa_type .eq. 1) then   
+                  write(ifi,"(f19.15, 3i8, 3f13.6 )")
+     &              sum(abs(cbwf(ib,1:nwf_crpa,ikp,is))**2), ib, ikp, is, qtt(1:3,ikp)
+                endif
+                if(crpa_type .eq. 2) then   
+                  if(sum(abs(cbwf(ib,1:nwf_crpa,ikp,is))**2) > 0.5) then
+                     write(ifi,"(f19.15, 3i8, 3f13.6 )") 1.0, ib, ikp, is, qtt(1:3,ikp)
+                  elseif(sum(abs(cbwf(ib,1:nwf_crpa,ikp,is))**2) < 0.5) then
+                     write(ifi,"(f19.15, 3i8, 3f13.6 )") 0.0, ib, ikp, is, qtt(1:3,ikp)
+                  endif
+                endif
              enddo
           endif
 
